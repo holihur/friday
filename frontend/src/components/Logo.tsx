@@ -8,10 +8,7 @@ export function Logo({ compact = false, className }: { compact?: boolean; classN
         <span className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full border-2 border-background bg-success" />
       </div>
       {!compact && (
-        <div className="leading-none">
-          <span className="text-[17px] font-extrabold tracking-tight">Friday</span>
-          <span className="ml-1 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">work os</span>
-        </div>
+        <span className="text-[18px] font-extrabold tracking-tight">Friday</span>
       )}
     </div>
   )

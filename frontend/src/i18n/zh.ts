@@ -482,7 +482,6 @@ export const zh: Record<string, string> = {
   "Enter a valid 6-digit code.": "请输入有效的 6 位验证码。",
   "Enter an email address.": "请输入邮箱地址。",
   "Enter the 6-digit code from your app.": "请输入应用中的 6 位验证码。",
-  "Friday Work OS": "Friday 工作系统",
   "In": "在",
   "Invite link copied": "邀请链接已复制",
   "Kanban groups items by the labels in your status column.": "看板视图根据状态列中的标签对条目分组。",

@@ -24,10 +24,7 @@ export function AuthLayout({
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-[17px] font-extrabold text-primary shadow-lg shadow-black/20">
             F
           </div>
-          <div>
-            <div className="text-lg font-extrabold tracking-tight">Friday</div>
-            <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-white/50">Work OS</div>
-          </div>
+          <div className="text-lg font-extrabold tracking-tight">Friday</div>
         </div>
 
         <div className="relative max-w-md">
@@ -121,7 +118,7 @@ export function AuthLayout({
           </div>
         </div>
         <div className="px-6 pb-6 text-center text-[11px] text-muted-foreground">
-          {t("Friday Work OS")} · {t("Secure by default")}
+          Friday · {t("Secure by default")}
         </div>
       </div>
     </div>

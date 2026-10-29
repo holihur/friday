@@ -1,4 +1,4 @@
-# Friday · Work OS
+# Friday
 
 一个 **Monday 风格** 的 feature / 项目管理工作台：看板、分组、表格、Kanban、活动流、评论、搜索、Dashboard，以及完整的账户体系（密码、TOTP、PAT Scope、OIDC）。
 
