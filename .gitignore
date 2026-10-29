@@ -1,0 +1,21 @@
+# deps
+node_modules/
+.pnpm-store/
+backend/bin/
+backend/tmp/
+
+# builds
+frontend/dist/
+frontend/.vite/
+*.exe
+
+# env & local data
+.env
+.env.local
+data/
+*.log
+
+# editor
+.DS_Store
+.idea/
+.vscode/

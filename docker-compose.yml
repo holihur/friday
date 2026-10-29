@@ -1,0 +1,41 @@
+services:
+  mongo:
+    image: mongo:8
+    restart: unless-stopped
+    command: ["mongod", "--bind_ip_all", "--wiredTigerCacheSizeGB", "0.25"]
+    volumes:
+      - mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand({ping:1}).ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  friday:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      mongo:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    environment:
+      PORT: "8090"
+      APP_URL: "http://localhost:8090"
+      MONGO_URI: "mongodb://mongo:27017"
+      MONGO_DB: "friday"
+      SEED_DEMO: "true"
+      ALLOW_REGISTRATION: "true"
+      # Configure SMTP for invitation / password reset emails:
+      # SMTP_HOST: "smtp.example.com"
+      # SMTP_PORT: "587"
+      # SMTP_USERNAME: ""
+      # SMTP_PASSWORD: ""
+      # SMTP_FROM: "Friday <no-reply@example.com>"
+      # OIDC_ISSUER: ""
+      # OIDC_CLIENT_ID: ""
+      # OIDC_CLIENT_SECRET: ""
+      # OIDC_REDIRECT_URL: "http://localhost:8090/api/auth/oidc/callback"
+
+volumes:
+  mongo-data:
