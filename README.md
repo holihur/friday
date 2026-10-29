@@ -1,5 +1,7 @@
 # Friday
 
+[![CI](https://github.com/holihur/friday/actions/workflows/ci.yml/badge.svg)](https://github.com/holihur/friday/actions/workflows/ci.yml)
+
 一个 **Monday 风格** 的 feature / 项目管理工作台：看板、分组、表格、Kanban、活动流、评论、搜索、Dashboard，以及完整的账户体系（密码、TOTP、PAT Scope、OIDC）。
 
 前端由 **Go 单体直接托管**：生产构建会通过 `go:embed` 把 SPA 打进 Go 二进制，部署时只需要一个进程 + MongoDB。
@@ -17,6 +19,8 @@
 - **Board 级共享**：Workspace / Private 可见性，显式成员与 Viewer/Commenter/Editor/Admin 角色。
 - **账户安全**：忘记密码、SMTP 邮件、登录限流、安全响应头、登录设备管理、TOTP 恢复码。
 - **国际化**：English + 简体中文，语言选择持久化，日期格式随语言切换。
+- **BYOK（用户级）**：每个用户配置自己的 OpenAI-compatible Key，AES-256-GCM 加密存储。
+- **Friday AI Agent**：Board 内对话，读取/搜索看板，创建/更新条目以“待审批变更”形式返回，用户确认后才执行。
 - **部署**：单个 Go 二进制 / Dockerfile / docker-compose / GitHub Actions。
 - **认证**
   - 邮箱 + 密码（bcrypt）
@@ -151,6 +155,8 @@ mise run serve     # 运行 backend/bin/friday-server
 | `SMTP_FROM_NAME` | `Friday` | 发件人名称 |
 | `SMTP_TLS` | `true` | 是否使用 STARTTLS |
 | `SMTP_IMPLICIT_TLS` | `false` | 465 隐式 TLS |
+| `APP_ENCRYPTION_KEY` | 空（开发回退） | 加密用户 BYOK Key；生产必须设置为 32-byte base64/hex |
+| `AI_ALLOW_PRIVATE_ENDPOINTS` | `false` | 允许 localhost/内网 AI 地址（Ollama、本地 mock） |
 
 ## 认证设计
 
@@ -245,6 +251,10 @@ GET /api/auth/oidc/callback
 | `PATCH/DELETE` | `/api/boards/{id}/members/{userId}` | `boards:write` + board admin |
 | `POST` | `/api/auth/password-reset/request` | Public |
 | `POST` | `/api/auth/password-reset/confirm` | Public |
+| `GET/PUT/DELETE` | `/api/me/ai` | Session |
+| `POST` | `/api/me/ai/test` | Session |
+| `POST` | `/api/agent/chat` | Session |
+| `POST` | `/api/agent/actions/{id}/approve` / `reject` | Session |
 | `GET/DELETE` | `/api/me/sessions` | Session |
 | `DELETE` | `/api/me/sessions/{id}` | Session |
 | `GET/POST` | `/api/workspaces` | Session |
@@ -325,6 +335,7 @@ GET /api/auth/oidc/callback
 - 登录/注册/TOTP/密码重置均有内存级限流（按 IP + 路径）。
 - 安全响应头：CSP、HSTS（HTTPS 时）、X-Frame-Options、X-Content-Type-Options、Referrer-Policy、Permissions-Policy。
 - TOTP 启用时生成 10 个一次性恢复码，bcrypt 哈希存储；登录或关闭 2FA 时可用恢复码。
+- BYOK API Key 使用 AES-256-GCM 加密；Agent 写操作必须人工确认，且按请求重新校验权限。
 - 登录设备列表可查看 IP / User-Agent，支持撤销其他设备。
 - Session 只存 SHA-256 哈希；CSRF Double-submit；PAT 只存哈希。
 - 生产建议：`COOKIE_SECURE=true`、TLS 反向代理、MongoDB 认证、定期备份。
@@ -349,6 +360,32 @@ docker run --rm -p 8090:8090 \
 - Dockerfile 多阶段构建：Node 构建 SPA → Go 嵌入 SPA → Alpine 运行。
 - 生产请设置 `SMTP_*`、`APP_URL`、`COOKIE_SECURE=true`，并关闭/修改 demo 账号。
 - GitHub Actions 位于 `.github/workflows/ci.yml`：Go vet/test/build、前端 typecheck/build、Docker build。
+
+## BYOK 与 Friday AI Agent
+
+### BYOK（用户级）
+
+- 每个用户在 **Settings → AI & Agent** 配置自己的 OpenAI-compatible 服务。
+- 支持 OpenAI、DeepSeek、OpenRouter、Groq、Ollama 等兼容 `/chat/completions` 的服务。
+- API Key 使用 AES-256-GCM 加密存储（`APP_ENCRYPTION_KEY`），API 只返回尾号，不返回明文，不写日志。
+- 支持保存、测试连接、移除 Key；`Test connection` 会发起一次极小的 Chat Completion 探测。
+- 默认禁止 localhost/内网地址；本地 Ollama 需设置 `AI_ALLOW_PRIVATE_ENDPOINTS=true`。
+- 生产环境务必设置固定的 `APP_ENCRYPTION_KEY`；更换后已保存的 Key 将无法解密。
+
+### Agent
+
+- Board 页面右上角 **Ask Friday** 打开侧边对话。
+- 工具：
+  - `list_boards` / `get_board`
+  - `search_items`
+  - `list_people`
+  - `create_item`
+  - `update_item`
+- 写入工具不会自动执行：服务端生成 `agent_actions` 待审批记录，用户在 UI 点击 Apply 才真正修改。
+- 所有工具都按当前用户权限校验；不能越权访问 Board。
+- Agent 操作记录在 `agent_actions`，活动流标记 `via Friday AI`。
+- 当前版本为请求-响应，不做 token streaming；对话不持久化；没有删除、批量修改、文件或自动化工具。
+- 用户自己的 Provider 会收到当前请求所需的 Board 数据；这是 BYOK 模式的预期行为。
 
 ## 甘特图
 
@@ -380,6 +417,10 @@ docker run --rm -p 8090:8090 \
 | --- | --- |
 | ![Forgot password](docs/screenshots/forgot-password.png) | ![English](docs/screenshots/dashboard-en.png) |
 
+| Friday AI · proposal approval | BYOK settings |
+| --- | --- |
+| ![Agent](docs/screenshots/agent-proposal.png) | ![BYOK](docs/screenshots/settings-ai.png) |
+
 | Login | Settings |
 | --- | --- |
 | ![Login](docs/screenshots/login.png) | ![Settings](docs/screenshots/settings.png) |
@@ -398,6 +439,8 @@ MongoDB 集合：
 - `invitations` — 邀请（哈希 Token、过期时间）
 - `sessions` — 哈希后 Session + TTL 索引
 - `password_reset_tokens` — 密码重置 Token + TTL 索引
+- `user_ai_configs` — 用户级 BYOK 配置（加密 Key、Base URL、Model）
+- `agent_actions` — Agent 待审批/已执行操作审计
 - `login_challenges` — TOTP 登录短期 challenge
 - `personal_access_tokens` — 哈希后 PAT、scope、过期时间
 - `boards` — workspaceId、可见性、名称、颜色、图标、columns、成员
@@ -435,6 +478,8 @@ storage:
 ## 已知限制
 
 - 没有邮箱验证（注册后可直接使用）。
+- Agent 目前是请求-响应，不支持 token streaming 和对话持久化；没有删除/批量操作工具。
+- BYOK 需要真实模型服务验证；测试环境使用本地 mock 验证了读取、创建、更新和审批流程。
 - TOTP 恢复码只在启用时生成一次，暂不支持重新生成。
 - 后端错误未做完整的 `Accept-Language` 服务端本地化，只在前端映射常见错误。
 - 没有实时推送 / WebSocket，多人协作依赖刷新。

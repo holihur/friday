@@ -27,6 +27,48 @@ type User struct {
 
 func (u *User) HasPassword() bool { return u.PasswordHash != "" }
 
+// ---------- AI / BYOK ----------
+
+type UserAIConfig struct {
+	ID              primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID          primitive.ObjectID `bson:"userId" json:"userId"`
+	Provider        string             `bson:"provider" json:"provider"`
+	BaseURL         string             `bson:"baseUrl" json:"baseUrl"`
+	Model           string             `bson:"model" json:"model"`
+	APIKeyEncrypted string             `bson:"apiKeyEncrypted" json:"-"`
+	APIKeyLast4     string             `bson:"apiKeyLast4" json:"apiKeyLast4"`
+	CreatedAt       time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt       time.Time          `bson:"updatedAt" json:"updatedAt"`
+}
+
+type AgentChange struct {
+	Field string `bson:"field" json:"field"`
+	Value string `bson:"value" json:"value"`
+}
+
+type AgentActionPayload struct {
+	BoardID  primitive.ObjectID `bson:"boardId" json:"boardId"`
+	GroupID  primitive.ObjectID `bson:"groupId,omitempty" json:"groupId,omitempty"`
+	ItemID   primitive.ObjectID `bson:"itemId,omitempty" json:"itemId,omitempty"`
+	ItemName string             `bson:"itemName" json:"itemName"`
+	Values   map[string]any     `bson:"values,omitempty" json:"values,omitempty"`
+	Changes  []AgentChange      `bson:"changes,omitempty" json:"changes,omitempty"`
+}
+
+type AgentAction struct {
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	UserID      primitive.ObjectID `bson:"userId" json:"userId"`
+	WorkspaceID primitive.ObjectID `bson:"workspaceId" json:"workspaceId"`
+	BoardID     primitive.ObjectID `bson:"boardId,omitempty" json:"boardId,omitempty"`
+	Type        string             `bson:"type" json:"type"`
+	Summary     string             `bson:"summary" json:"summary"`
+	Payload     AgentActionPayload `bson:"payload" json:"payload"`
+	Status      string             `bson:"status" json:"status"`
+	Error       string             `bson:"error,omitempty" json:"error,omitempty"`
+	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
+	ExecutedAt  *time.Time         `bson:"executedAt,omitempty" json:"executedAt,omitempty"`
+}
+
 // ---------- Sessions & tokens ----------
 
 type Session struct {

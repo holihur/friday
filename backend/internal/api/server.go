@@ -64,6 +64,15 @@ func (s *Server) Router() http.Handler {
 			r.Post("/me/totp/setup", s.sessionOnly(s.setupTOTP))
 			r.Post("/me/totp/enable", s.sessionOnly(s.enableTOTP))
 			r.Post("/me/totp/disable", s.sessionOnly(s.disableTOTP))
+			r.Post("/agent/chat", s.sessionOnly(s.agentChat))
+			r.Post("/agent/actions/{actionID}/approve", s.sessionOnly(s.approveAgentAction))
+			r.Post("/agent/actions/{actionID}/reject", s.sessionOnly(s.rejectAgentAction))
+
+			r.Get("/me/ai", s.sessionOnly(s.getAIConfig))
+			r.Put("/me/ai", s.sessionOnly(s.updateAIConfig))
+			r.Delete("/me/ai", s.sessionOnly(s.deleteAIConfig))
+			r.Post("/me/ai/test", s.sessionOnly(s.testAIConfig))
+
 			r.Get("/me/sessions", s.sessionOnly(s.listSessions))
 			r.Delete("/me/sessions", s.sessionOnly(s.revokeOtherSessions))
 			r.Delete("/me/sessions/{sessionID}", s.sessionOnly(s.revokeSession))

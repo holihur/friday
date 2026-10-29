@@ -19,3 +19,6 @@ data/
 .DS_Store
 .idea/
 .vscode/
+
+# TypeScript incremental build
+*.tsbuildinfo

@@ -11,6 +11,7 @@ import {
   Pencil,
   Plus,
   Share2,
+  Sparkles,
   Table2,
   Trash2,
   UsersRound,
@@ -52,6 +53,7 @@ export function BoardHeader({
   permissions,
   onUpdateVisibility,
   onShare,
+  onOpenAgent,
 }: {
   board: Board
   groups: Group[]
@@ -65,6 +67,7 @@ export function BoardHeader({
   permissions: BoardPermissions
   onUpdateVisibility: (visibility: "workspace" | "private") => void
   onShare: () => void
+  onOpenAgent: () => void
 }) {
   const { t } = useTranslation()
   const [editing, setEditing] = useState(false)
@@ -155,6 +158,10 @@ export function BoardHeader({
                 <AvatarStack users={involved} max={5} size="sm" />
               </div>
             )}
+            <Button variant="soft" onClick={onOpenAgent} className="px-2.5 sm:px-4">
+              <Sparkles />
+              <span className="hidden sm:inline">{t("Ask Friday")}</span>
+            </Button>
             {permissions.canEdit && (
               <Button onClick={onNewItem}>
                 <Plus /> {t("New item")}

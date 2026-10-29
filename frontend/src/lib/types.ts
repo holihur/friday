@@ -232,3 +232,39 @@ export type PATScope =
   | "items:read"
   | "items:write"
   | "users:read"
+
+
+export interface AIConfig {
+  configured: boolean
+  provider: string
+  baseUrl: string
+  model: string
+  apiKeyLast4?: string
+  updatedAt?: string
+}
+
+export interface AgentChange {
+  field: string
+  value: string
+}
+
+export interface AgentProposalPayload {
+  boardId: string
+  groupId?: string
+  itemId?: string
+  itemName: string
+  values?: Record<string, unknown>
+  changes?: AgentChange[]
+}
+
+export interface AgentProposal {
+  id: string
+  type: "create_item" | "update_item" | string
+  summary: string
+  payload: AgentProposalPayload
+}
+
+export interface AgentChatResponse {
+  message: string
+  proposals: AgentProposal[]
+}

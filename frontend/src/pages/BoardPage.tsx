@@ -7,6 +7,7 @@ import { ActivityView } from "@/components/board/ActivityView"
 import { BoardHeader, type BoardView } from "@/components/board/BoardHeader"
 import { BoardTable } from "@/components/board/BoardTable"
 import { BoardShareDialog } from "@/components/board/BoardShareDialog"
+import { AgentDrawer } from "@/components/board/AgentDrawer"
 import { ItemDrawer } from "@/components/board/ItemDrawer"
 import { GanttView } from "@/components/board/GanttView"
 import { KanbanView } from "@/components/board/KanbanView"
@@ -39,6 +40,7 @@ export default function BoardPage() {
   const [newItemOpen, setNewItemOpen] = useState(false)
   const [defaultGroupId, setDefaultGroupId] = useState<string | undefined>()
   const [shareOpen, setShareOpen] = useState(false)
+  const [agentOpen, setAgentOpen] = useState(false)
   const { workspace, setWorkspace } = useWorkspace()
   const { t } = useTranslation()
 
@@ -170,6 +172,7 @@ export default function BoardPage() {
         permissions={permissions}
         onUpdateVisibility={(visibility) => mutations.updateBoard.mutate({ visibility })}
         onShare={() => setShareOpen(true)}
+        onOpenAgent={() => setAgentOpen(true)}
       />
 
       <div className="mx-auto w-full max-w-[1600px] px-4 pt-5 sm:px-6 lg:px-8">
@@ -235,6 +238,7 @@ export default function BoardPage() {
       />
 
       <BoardShareDialog open={shareOpen} onOpenChange={setShareOpen} board={board} />
+      <AgentDrawer open={agentOpen} onOpenChange={setAgentOpen} board={board} />
 
       <ItemDrawer
         open={Boolean(selectedItem)}

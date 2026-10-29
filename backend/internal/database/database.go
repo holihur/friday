@@ -38,8 +38,23 @@ func Connect(ctx context.Context, cfg *config.Config) (*DB, error) {
 func (d *DB) Close(ctx context.Context) error { return d.Client.Disconnect(ctx) }
 
 func (d *DB) ensureIndexes(ctx context.Context) error {
+	userAIConfigs := d.Database.Collection("user_ai_configs")
+	_, err := userAIConfigs.Indexes().CreateOne(ctx, mongo.IndexModel{Keys: bson.D{{Key: "userId", Value: 1}}, Options: options.Index().SetUnique(true)})
+	if err != nil {
+		return err
+	}
+
+	agentActions := d.Database.Collection("agent_actions")
+	_, err = agentActions.Indexes().CreateMany(ctx, []mongo.IndexModel{
+		{Keys: bson.D{{Key: "userId", Value: 1}, {Key: "createdAt", Value: -1}}},
+		{Keys: bson.D{{Key: "status", Value: 1}}},
+	})
+	if err != nil {
+		return err
+	}
+
 	users := d.Database.Collection("users")
-	_, err := users.Indexes().CreateMany(ctx, []mongo.IndexModel{
+	_, err = users.Indexes().CreateMany(ctx, []mongo.IndexModel{
 		{Keys: bson.D{{Key: "email", Value: 1}}, Options: options.Index().SetUnique(true)},
 		{Keys: bson.D{{Key: "oidcIssuer", Value: 1}, {Key: "oidcSubject", Value: 1}}, Options: options.Index().SetName("oidc_identity")},
 	})

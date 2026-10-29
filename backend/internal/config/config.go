@@ -35,6 +35,9 @@ type Config struct {
 	SMTPFromName    string
 	SMTPTLS         bool
 	SMTPImplicitTLS bool
+
+	EncryptionKey           string
+	AIAllowPrivateEndpoints bool
 }
 
 func Load() *Config {
@@ -68,6 +71,9 @@ func Load() *Config {
 		SMTPFromName:    env("SMTP_FROM_NAME", "Friday"),
 		SMTPTLS:         envBool("SMTP_TLS", true),
 		SMTPImplicitTLS: envBool("SMTP_IMPLICIT_TLS", false),
+
+		EncryptionKey:           os.Getenv("APP_ENCRYPTION_KEY"),
+		AIAllowPrivateEndpoints: envBool("AI_ALLOW_PRIVATE_ENDPOINTS", false),
 	}
 	return c
 }

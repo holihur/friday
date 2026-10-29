@@ -15,6 +15,8 @@ import {
   ShieldOff,
   Smartphone,
   Monitor,
+  Bot,
+  Sparkles,
   Trash2,
   UserRound,
 } from "lucide-react"
@@ -34,12 +36,13 @@ import { api, ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { AVATAR_COLORS } from "@/lib/colors"
 import { cn, describeUserAgent, formatDateValue, formatDateTime, initials, timeAgo } from "@/lib/utils"
-import type { PAT, PATScope, SessionInfo, User } from "@/lib/types"
+import type { AIConfig, PAT, PATScope, SessionInfo, User } from "@/lib/types"
 
 const tabs = [
   { id: "profile", label: "Profile", icon: UserRound },
   { id: "security", label: "Security", icon: ShieldCheck },
   { id: "tokens", label: "Access tokens", icon: KeyRound },
+  { id: "ai", label: "AI & Agent", icon: Sparkles },
 ] as const
 
 type TabId = (typeof tabs)[number]["id"]
@@ -919,6 +922,179 @@ function TokensTab() {
   )
 }
 
+function AITab() {
+  const { t } = useTranslation()
+  const queryClient = useQueryClient()
+  const { data, isLoading } = useQuery({
+    queryKey: ["ai-config"],
+    queryFn: () => api.get<{ config: AIConfig }>("/me/ai"),
+  })
+  const config = data?.config
+  const [baseUrl, setBaseUrl] = useState("")
+  const [model, setModel] = useState("")
+  const [apiKey, setApiKey] = useState("")
+  const [saving, setSaving] = useState(false)
+  const [testing, setTesting] = useState(false)
+  const [removing, setRemoving] = useState(false)
+  const [confirmRemove, setConfirmRemove] = useState(false)
+
+  useEffect(() => {
+    if (!config) return
+    setBaseUrl(config.baseUrl || "https://api.openai.com/v1")
+    setModel(config.model || "gpt-4o-mini")
+  }, [config])
+
+  async function save() {
+    if (!baseUrl.trim() || !model.trim()) {
+      toast.error(t("Base URL and model are required"))
+      return
+    }
+    if (!config?.configured && !apiKey.trim()) {
+      toast.error(t("Enter your provider API key"))
+      return
+    }
+    setSaving(true)
+    try {
+      const res = await api.put<{ config: AIConfig }>("/me/ai", {
+        provider: "openai-compatible",
+        baseUrl: baseUrl.trim(),
+        model: model.trim(),
+        apiKey: apiKey.trim() || undefined,
+      })
+      queryClient.setQueryData(["ai-config"], { config: res.config })
+      setApiKey("")
+      toast.success(t("AI settings saved"))
+    } catch (err) {
+      toast.error(err instanceof ApiError ? t(err.message) : t("Could not save AI settings"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function test() {
+    setTesting(true)
+    try {
+      await api.post("/me/ai/test")
+      toast.success(t("Connection successful"))
+    } catch (err) {
+      toast.error(err instanceof ApiError ? t(err.message) : t("Connection failed"))
+    } finally {
+      setTesting(false)
+    }
+  }
+
+  async function remove() {
+    setRemoving(true)
+    try {
+      await api.delete("/me/ai")
+      queryClient.setQueryData(["ai-config"], { config: { configured: false, provider: "openai-compatible", baseUrl: "", model: "" } })
+      setApiKey("")
+      toast.success(t("AI settings removed"))
+    } catch (err) {
+      toast.error(err instanceof ApiError ? t(err.message) : t("Could not remove AI settings"))
+    } finally {
+      setRemoving(false)
+      setConfirmRemove(false)
+    }
+  }
+
+  if (isLoading) {
+    return <Skeleton className="h-64 rounded-2xl" />
+  }
+
+  return (
+    <div className="space-y-5">
+      <SettingsCard
+        title={t("BYOK · Bring your own key")}
+        description={t("Your provider key is encrypted at rest and only used for your own agent requests.")}
+        icon={Bot}
+        action={<Badge variant={config?.configured ? "success" : "muted"}>{config?.configured ? t("Configured") : t("Not configured")}</Badge>}
+      >
+        <div className="grid gap-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>{t("Provider")}</Label>
+              <div className="flex h-9 items-center rounded-lg border border-input bg-muted/40 px-3 text-sm">
+                <Sparkles className="mr-2 h-4 w-4 text-primary" /> OpenAI-compatible
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="ai-model">{t("Model")}</Label>
+              <Input id="ai-model" value={model} onChange={(e) => setModel(e.target.value)} placeholder="gpt-4o-mini" />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ai-base-url">{t("Base URL")}</Label>
+            <Input
+              id="ai-base-url"
+              value={baseUrl}
+              onChange={(e) => setBaseUrl(e.target.value)}
+              placeholder="https://api.openai.com/v1"
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("Works with OpenAI, DeepSeek, OpenRouter, Groq and local OpenAI-compatible servers.")}
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="ai-key">{t("API key")}</Label>
+            <Input
+              id="ai-key"
+              type="password"
+              autoComplete="off"
+              value={apiKey}
+              onChange={(e) => setApiKey(e.target.value)}
+              placeholder={config?.configured ? `••••••••${config.apiKeyLast4 ?? ""}` : "sk-…"}
+            />
+            <p className="text-[11px] text-muted-foreground">
+              {t("Leave blank to keep the current key. The key is never returned by the API or written to logs.")}
+            </p>
+          </div>
+          {config?.configured && (
+            <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-success" />
+              {t("Key ending in")} {config.apiKeyLast4} · {config.model}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => void save()} disabled={saving}>
+              {saving ? <Loader2 className="animate-spin" /> : <Sparkles />}
+              {t("Save AI settings")}
+            </Button>
+            <Button variant="outline" onClick={() => void test()} disabled={!config?.configured || testing}>
+              {testing ? <Loader2 className="animate-spin" /> : <Bot />}
+              {t("Test connection")}
+            </Button>
+            {config?.configured && (
+              <Button
+                variant="ghost"
+                className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                onClick={() => setConfirmRemove(true)}
+                disabled={removing}
+              >
+                <Trash2 /> {t("Remove key")}
+              </Button>
+            )}
+          </div>
+        </div>
+      </SettingsCard>
+
+      <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
+        <span className="font-semibold text-foreground">{t("User-level BYOK:")}</span>{" "}
+        {t("Every user configures their own key. The Friday agent uses your key and only sees data you already have access to. Destructive actions are never executed automatically.")}
+      </div>
+
+      <ConfirmDialog
+        open={confirmRemove}
+        onOpenChange={setConfirmRemove}
+        title={t("Remove your provider key?")}
+        description={t("The Friday agent will stop working until you configure a key again.")}
+        confirmLabel={t("Remove key")}
+        onConfirm={remove}
+      />
+    </div>
+  )
+}
+
 export default function SettingsPage() {
   const { user } = useAuth()
   const { t } = useTranslation()
@@ -977,6 +1153,7 @@ export default function SettingsPage() {
           {tab === "profile" && <ProfileTab />}
           {tab === "security" && <SecurityTab />}
           {tab === "tokens" && <TokensTab />}
+          {tab === "ai" && <AITab />}
         </div>
       </div>
     </div>
