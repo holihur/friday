@@ -6,6 +6,7 @@ import {
   ChevronDown,
   CircleDashed,
   Flag,
+  GitBranch,
   GripVertical,
   Hash,
   MoreHorizontal,
@@ -43,6 +44,7 @@ const columnTypeMeta: Record<ColumnType, { icon: typeof Type; label: string; tit
   priority: { icon: Flag, label: "Priority", title: "Priority" },
   numbers: { icon: Hash, label: "Numbers", title: "Numbers" },
   checkbox: { icon: CheckSquare, label: "Checkbox", title: "Checkbox" },
+  dependency: { icon: GitBranch, label: "Dependencies", title: "Dependencies" },
 }
 
 interface BoardTableProps {
@@ -102,7 +104,7 @@ function ColumnHeader({
               setEditing(false)
             }
           }}
-          className="min-w-0 flex-1 rounded border border-primary/50 bg-background px-1 py-0.5 text-[11px] font-semibold outline-none"
+          className="min-w-0 flex-1 rounded-sm border border-primary/50 bg-background px-1 py-0.5 text-[11px] font-semibold outline-none"
         />
       ) : (
         <span className="min-w-0 flex-1 truncate text-[11px] font-semibold text-muted-foreground">{t(column.title)}</span>
@@ -111,7 +113,7 @@ function ColumnHeader({
         <>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="rounded p-0.5 text-muted-foreground opacity-0 transition hover:bg-accent group-hover/col:opacity-100 data-[state=open]:opacity-100">
+              <button className="rounded-sm p-0.5 text-muted-foreground opacity-0 transition hover:bg-accent group-hover/col:opacity-100 data-[state=open]:opacity-100">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
@@ -206,7 +208,7 @@ function QuickAddItem({
           if (e.key === "Enter") void submit()
         }}
         placeholder={t("Add item")}
-        className="h-7 w-full min-w-0 rounded border border-transparent bg-transparent px-1 text-xs outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary/40 focus:bg-background focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
+        className="h-7 w-full min-w-0 rounded-sm border border-transparent bg-transparent px-1 text-xs outline-none placeholder:text-muted-foreground/60 hover:border-border focus:border-primary/40 focus:bg-background focus:ring-2 focus:ring-primary/10 disabled:opacity-50"
       />
       {name.trim() && (
         <Button size="sm" className="h-6 px-2 text-[10px]" onClick={() => void submit()} disabled={saving}>
@@ -289,13 +291,13 @@ function GroupSection({
           {!readOnly && (
             <button
               onClick={() => onUpdateGroup(group.id, { collapsed: !group.collapsed })}
-              className="rounded p-0.5 text-muted-foreground transition hover:bg-accent"
+              className="rounded-sm p-0.5 text-muted-foreground transition hover:bg-accent"
               title={group.collapsed ? t("Expand group") : t("Collapse group")}
             >
               <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", group.collapsed && "-rotate-90")} />
             </button>
           )}
-          <span className="h-3 w-3 rounded-[3px]" style={{ backgroundColor: group.color }} />
+          <span className="h-3 w-3 rounded-[4px]" style={{ backgroundColor: group.color }} />
           {editing && !readOnly ? (
             <input
               autoFocus
@@ -309,7 +311,7 @@ function GroupSection({
                   setEditing(false)
                 }
               }}
-              className="w-56 rounded border border-primary/50 bg-background px-1.5 py-0.5 text-[13px] font-bold outline-none"
+              className="w-56 rounded-sm border border-primary/50 bg-background px-1.5 py-0.5 text-[13px] font-bold outline-none"
             />
           ) : (
             <button
@@ -321,21 +323,21 @@ function GroupSection({
               {t(group.title)}
             </button>
           )}
-          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+          <span className="rounded-[4px] bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
             {groupItems.length}
           </span>
           {!readOnly && (
           <div className="ml-1 flex items-center gap-0.5">
             <button
               onClick={() => setEditing(true)}
-              className="rounded p-1 text-muted-foreground opacity-0 transition hover:bg-accent group-hover/group:opacity-100"
+              className="rounded-sm p-1 text-muted-foreground opacity-0 transition hover:bg-accent group-hover/group:opacity-100"
               title={t("Rename group")}
             >
               <Pencil className="h-3 w-3" />
             </button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button className="rounded p-1 text-muted-foreground transition hover:bg-accent">
+                <button className="rounded-sm p-1 text-muted-foreground transition hover:bg-accent">
                   <MoreHorizontal className="h-3.5 w-3.5" />
                 </button>
               </DropdownMenuTrigger>
@@ -373,6 +375,7 @@ function GroupSection({
                 item={item}
                 board={board}
                 users={users}
+                items={items}
                 onOpen={onOpenItem}
                 onChange={(patch) => onUpdateItem({ id: item.id, ...patch })}
                 readOnly={readOnly}
@@ -415,6 +418,7 @@ function ItemRow({
   item,
   board,
   users,
+  items,
   onOpen,
   onChange,
   readOnly,
@@ -422,6 +426,7 @@ function ItemRow({
   item: Item
   board: Board
   users: User[]
+  items: Item[]
   onOpen: (id: string) => void
   onChange: (patch: { values?: Record<string, unknown> }) => void
   readOnly?: boolean
@@ -448,7 +453,7 @@ function ItemRow({
               setDragging(true)
             }}
             onDragEnd={() => setDragging(false)}
-            className="cursor-grab rounded p-0.5 text-muted-foreground/40 opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
+            className="cursor-grab rounded-sm p-0.5 text-muted-foreground/40 opacity-0 transition hover:bg-accent hover:text-foreground group-hover:opacity-100 active:cursor-grabbing"
             title={t("Drag to another group")}
           >
             <GripVertical className="h-3.5 w-3.5" />
@@ -469,9 +474,9 @@ function ItemRow({
           style={{ width: column.width, minWidth: column.width }}
         >
           {readOnly ? (
-            <StaticCell item={item} column={column} users={users} />
+            <StaticCell item={item} column={column} users={users} items={items} />
           ) : (
-            <CellRenderer item={item} column={column} users={users} onChange={(values) => onChange({ values })} />
+            <CellRenderer item={item} column={column} users={users} items={items} onChange={(values) => onChange({ values })} />
           )}
         </div>
       ))}

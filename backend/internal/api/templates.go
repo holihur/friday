@@ -38,6 +38,7 @@ func boardTemplate(name string) templateDef {
 				column("priority", "Priority", "priority", 120, priorityLabels()...),
 				column("start", "Start date", "date", 145),
 				column("target", "Target date", "date", 145),
+				column("dependencies", "Dependencies", "dependency", 190),
 				column("notes", "Notes", "text", 240),
 			},
 			Groups: []templateGroup{
@@ -54,6 +55,7 @@ func boardTemplate(name string) templateDef {
 				column("priority", "Priority", "priority", 120, priorityLabels()...),
 				column("start", "Start date", "date", 145),
 				column("due", "Due date", "date", 145),
+				column("dependencies", "Dependencies", "dependency", 190),
 				column("points", "Story points", "numbers", 100),
 			},
 			Groups: []templateGroup{
@@ -70,6 +72,7 @@ func boardTemplate(name string) templateDef {
 				column("priority", "Priority", "priority", 120, priorityLabels()...),
 				column("start", "Start date", "date", 145),
 				column("due", "Due date", "date", 145),
+				column("dependencies", "Dependencies", "dependency", 190),
 				column("effort", "Effort", "numbers", 90),
 				column("approved", "Approved", "checkbox", 90),
 			},

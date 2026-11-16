@@ -306,7 +306,7 @@ function TOTPSetupDialog({ open, onOpenChange }: { open: boolean; onOpenChange: 
         ) : (
           <div className="space-y-4">
             <div className="flex justify-center rounded-xl border border-border bg-white p-3">
-              {qr ? <img src={qr} alt="Authenticator QR code" className="h-44 w-44" /> : <div className="h-44 w-44 animate-pulse rounded bg-muted" />}
+              {qr ? <img src={qr} alt="Authenticator QR code" className="h-44 w-44" /> : <div className="h-44 w-44 animate-pulse rounded-sm bg-muted" />}
             </div>
             {setup && (
               <div className="rounded-lg bg-muted/60 px-3 py-2">
@@ -903,7 +903,7 @@ function TokensTab() {
 
       <div className="rounded-xl border border-border bg-muted/30 px-4 py-3 text-[11px] leading-relaxed text-muted-foreground">
         <span className="font-semibold text-foreground">{t("Using a token:")}</span> send{" "}
-        <code className="rounded bg-background px-1 py-0.5 font-mono">Authorization: Bearer fdy_…</code> with any API request.
+        <code className="rounded-sm bg-background px-1 py-0.5 font-mono">Authorization: Bearer fdy_…</code> with any API request.
         {t("Browser sessions are CSRF-protected; PAT requests are not tied to a cookie.")}
       </div>
 

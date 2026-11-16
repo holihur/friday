@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { CalendarDays, Loader2, MessageSquare, Send, Trash2, UserRound } from "lucide-react"
+import { CalendarDays, GitBranch, Loader2, MessageSquare, Send, Trash2, UserRound } from "lucide-react"
 import { toast } from "sonner"
 import { ConfirmDialog } from "@/components/ConfirmDialog"
 import { UserAvatar } from "@/components/UserAvatar"
@@ -13,7 +13,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { api, ApiError } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { useBoardMutations } from "@/lib/board-mutations"
-import { cn, formatDateTime, timeAgo } from "@/lib/utils"
+import { cn, formatDateValue, formatDateTime, timeAgo } from "@/lib/utils"
 import type { Board, BoardPermissions, Comment, Group, Item, User } from "@/lib/types"
 
 export function ItemDrawer({
@@ -21,6 +21,7 @@ export function ItemDrawer({
   onOpenChange,
   board,
   groups,
+  items,
   item,
   users,
   permissions,
@@ -29,6 +30,7 @@ export function ItemDrawer({
   onOpenChange: (open: boolean) => void
   board: Board
   groups: Group[]
+  items: Item[]
   item?: Item
   users: User[]
   permissions: BoardPermissions
@@ -199,18 +201,27 @@ export function ItemDrawer({
                   item={item}
                   column={column}
                   users={users}
+                  items={items}
                   onChange={(values) => mutations.updateItem.mutate({ id: item.id, values })}
                   readOnly={!permissions.canEdit}
                 />
               ))}
             </div>
+            {item.schedule?.auto && (
+              <div className="mt-3 flex items-center gap-2 px-1 text-[11px] text-muted-foreground">
+                <GitBranch className="h-3.5 w-3.5 shrink-0 text-primary" />
+                <span>
+                  {t("Auto-scheduled")}: <strong className="font-semibold text-foreground">{formatDateValue(item.schedule.start)} → {formatDateValue(item.schedule.end)}</strong>
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="border-t border-border px-5 py-5">
             <div className="flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-bold">{t("Comments")}</h3>
-              <span className="rounded-full bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
+              <span className="rounded-[4px] bg-muted px-1.5 text-[10px] font-semibold text-muted-foreground">
                 {comments.length}
               </span>
             </div>
@@ -235,7 +246,7 @@ export function ItemDrawer({
                         {permissions.canComment && c.userId === user?.id && (
                           <button
                             onClick={() => removeComment.mutate(c.id)}
-                            className="ml-auto rounded p-1 text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover/comment:opacity-100"
+                            className="ml-auto rounded-sm p-1 text-muted-foreground opacity-0 transition hover:bg-destructive/10 hover:text-destructive group-hover/comment:opacity-100"
                             title={t("Delete comment")}
                           >
                             <Trash2 className="h-3 w-3" />

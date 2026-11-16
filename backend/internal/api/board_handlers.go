@@ -91,6 +91,7 @@ func (s *Server) getBoard(w http.ResponseWriter, r *http.Request) {
 	if err == nil {
 		_ = cur.All(ctx, &activity)
 	}
+	s.applySchedule(board, items)
 	writeJSON(w, http.StatusOK, models.BoardPayload{
 		Board:    *board,
 		Groups:   groups,
@@ -275,7 +276,7 @@ func (s *Server) createColumn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	switch req.Type {
-	case "status", "text", "people", "date", "priority", "numbers", "checkbox":
+	case "status", "text", "people", "date", "priority", "numbers", "checkbox", "dependency":
 	default:
 		writeError(w, http.StatusBadRequest, "unsupported column type")
 		return
@@ -522,6 +523,11 @@ func (s *Server) deleteGroup(w http.ResponseWriter, r *http.Request) {
 	if len(itemIDs) > 0 {
 		_, _ = s.db.Database.Collection("items").DeleteMany(r.Context(), bson.M{"_id": bson.M{"$in": itemIDs}})
 		_, _ = s.db.Database.Collection("comments").DeleteMany(r.Context(), bson.M{"itemId": bson.M{"$in": itemIDs}})
+		removed := make(map[string]bool, len(itemIDs))
+		for _, id := range itemIDs {
+			removed[id.Hex()] = true
+		}
+		s.removeDependencyReferences(r.Context(), g.BoardID, removed)
 	}
 	_, _ = s.db.Database.Collection("boards").UpdateOne(r.Context(), bson.M{"_id": g.BoardID}, bson.M{"$set": bson.M{"updatedAt": time.Now()}})
 	w.WriteHeader(http.StatusNoContent)

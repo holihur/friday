@@ -191,7 +191,7 @@ export function AgentDrawer({
                       <button
                         key={suggestion}
                         onClick={() => void send(suggestion)}
-                        className="rounded-full border border-border bg-card px-3 py-1.5 text-[11px] font-medium transition hover:border-primary/40 hover:text-primary"
+                        className="rounded-[4px] border border-border bg-card px-3 py-1.5 text-[11px] font-medium transition hover:border-primary/40 hover:text-primary"
                       >
                         {suggestion}
                       </button>

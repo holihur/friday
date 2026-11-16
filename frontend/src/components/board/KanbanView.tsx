@@ -58,7 +58,7 @@ function KanbanCard({
         {due && (
           <span
             className={cn(
-              "inline-flex items-center rounded bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground",
+              "inline-flex items-center rounded-sm bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground",
               tone === "danger" && "bg-destructive/10 text-destructive",
               tone === "warning" && "bg-warning/15 text-amber-700 dark:text-warning",
             )}
@@ -155,11 +155,11 @@ export function KanbanView({
             >
               <div className="mb-2 flex items-center gap-2 px-1">
                 <span
-                  className="h-2.5 w-2.5 rounded-[3px]"
+                  className="h-2.5 w-2.5 rounded-[4px]"
                   style={{ backgroundColor: label?.color ?? "#c4c4c4" }}
                 />
                 <span className="text-xs font-bold">{label ? t(label.name) : t("No status")}</span>
-                <span className="rounded-full bg-background px-1.5 text-[10px] font-semibold text-muted-foreground">
+                <span className="rounded-[4px] bg-background px-1.5 text-[10px] font-semibold text-muted-foreground">
                   {columnItems.length}
                 </span>
                 {!readOnly && (

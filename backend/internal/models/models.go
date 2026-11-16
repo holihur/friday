@@ -157,16 +157,26 @@ type Group struct {
 	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
 }
 
+type ItemSchedule struct {
+	Start string `json:"start"`
+	End   string `json:"end"`
+	Auto  bool   `json:"auto"`
+}
+
 type Item struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	BoardID   primitive.ObjectID `bson:"boardId" json:"boardId"`
-	GroupID   primitive.ObjectID `bson:"groupId" json:"groupId"`
-	Name      string             `bson:"name" json:"name"`
-	Position  float64            `bson:"position" json:"position"`
-	Values    map[string]any     `bson:"values" json:"values"`
-	CreatedBy primitive.ObjectID `bson:"createdBy" json:"createdBy"`
-	CreatedAt time.Time          `bson:"createdAt" json:"createdAt"`
-	UpdatedAt time.Time          `bson:"updatedAt" json:"updatedAt"`
+	ID          primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	BoardID     primitive.ObjectID `bson:"boardId" json:"boardId"`
+	GroupID     primitive.ObjectID `bson:"groupId" json:"groupId"`
+	Name        string             `bson:"name" json:"name"`
+	Position    float64            `bson:"position" json:"position"`
+	Values      map[string]any     `bson:"values" json:"values"`
+	CreatedBy   primitive.ObjectID `bson:"createdBy" json:"createdBy"`
+	CreatedAt   time.Time          `bson:"createdAt" json:"createdAt"`
+	UpdatedAt   time.Time          `bson:"updatedAt" json:"updatedAt"`
+	CompletedAt *time.Time         `bson:"completedAt,omitempty" json:"completedAt,omitempty"`
+
+	// Schedule is a read-time finish-to-start projection. It is never stored.
+	Schedule *ItemSchedule `bson:"-" json:"schedule,omitempty"`
 }
 
 type Comment struct {

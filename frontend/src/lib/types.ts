@@ -1,4 +1,4 @@
-export type ColumnType = "status" | "text" | "people" | "date" | "priority" | "numbers" | "checkbox"
+export type ColumnType = "status" | "text" | "people" | "date" | "priority" | "numbers" | "checkbox" | "dependency"
 
 export interface User {
   id: string
@@ -114,6 +114,19 @@ export interface Group {
   updatedAt: string
 }
 
+export type DependencyMode = "all" | "any"
+
+export interface DependencyValue {
+  itemIds: string[]
+  mode: DependencyMode
+}
+
+export interface ItemSchedule {
+  start: string
+  end: string
+  auto: boolean
+}
+
 export interface Item {
   id: string
   boardId: string
@@ -121,9 +134,11 @@ export interface Item {
   name: string
   position: number
   values: Record<string, unknown>
+  schedule?: ItemSchedule
   createdBy: string
   createdAt: string
   updatedAt: string
+  completedAt?: string
 }
 
 export interface Comment {

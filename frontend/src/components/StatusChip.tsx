@@ -14,7 +14,7 @@ export function StatusChip({
   const { t } = useTranslation()
   if (!label) {
     return (
-      <span className={cn("inline-flex items-center rounded text-[11px] text-muted-foreground", className)}>
+      <span className={cn("inline-flex items-center rounded-sm text-[11px] text-muted-foreground", className)}>
         {compact ? "" : "—"}
       </span>
     )

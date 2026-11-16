@@ -31,6 +31,7 @@ const columnTitles: Record<ColumnType, string> = {
   priority: "Priority",
   numbers: "Numbers",
   checkbox: "Checkbox",
+  dependency: "Dependencies",
 }
 
 export default function BoardPage() {
@@ -247,6 +248,7 @@ export default function BoardPage() {
         }}
         board={board}
         groups={groups}
+        items={items}
         item={selectedItem}
         users={users}
         permissions={permissions}

@@ -104,7 +104,7 @@ export default function MyWorkPage() {
               >
                 <Icon className="h-3.5 w-3.5" />
                 {f.label}
-                <span className="rounded-full bg-background/80 px-1.5 text-[10px] tabular-nums">{f.count}</span>
+                <span className="rounded-[4px] bg-background/80 px-1.5 text-[10px] tabular-nums">{f.count}</span>
               </button>
             )
           })}

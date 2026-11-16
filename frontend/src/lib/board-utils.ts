@@ -1,4 +1,4 @@
-import type { Board, Column, Item, Label, User } from "@/lib/types"
+import type { Board, Column, DependencyMode, DependencyValue, Item, Label, User } from "@/lib/types"
 import { safeArray } from "@/lib/utils"
 
 export function columnByType(board: Pick<Board, "columns"> | { columns: Column[] }, type: Column["type"]): Column | undefined {
@@ -44,6 +44,25 @@ export function itemDue(columns: Column[], values: Item["values"]): string {
   const col = dateColumn(columns)
   const raw = col ? values[col.id] : undefined
   return typeof raw === "string" ? raw : ""
+}
+
+export function parseDependencyValue(value: unknown): DependencyValue {
+  let rawIds: unknown = value
+  let mode: DependencyMode = "all"
+  if (value && typeof value === "object" && !Array.isArray(value)) {
+    const record = value as Record<string, unknown>
+    rawIds = record.itemIds ?? record.ids ?? record.items ?? []
+    mode = typeof record.mode === "string" && record.mode.toLowerCase() === "any" ? "any" : "all"
+  }
+  const itemIds = safeArray(rawIds)
+  return { itemIds: [...new Set(itemIds)], mode }
+}
+
+export function dependencyLinks(columns: Column[], values: Item["values"]): Array<DependencyValue & { columnId: string }> {
+  return columns
+    .filter((column) => column.type === "dependency")
+    .map((column) => ({ columnId: column.id, ...parseDependencyValue(values[column.id]) }))
+    .filter((link) => link.itemIds.length > 0)
 }
 
 export function assigneeIds(columns: Column[], values: Item["values"]): string[] {

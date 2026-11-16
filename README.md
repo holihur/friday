@@ -12,8 +12,8 @@
 
 - **Board / Group / Item**：Monday 风格的彩色分组、行内编辑、折叠、拖拽跨组移动。
 - **多视图**：Main table、Kanban（按状态分列，支持跨列拖拽）、**Gantt 甘特图**（日/周/月缩放、今日线）、Activity 时间线。
-- **列类型**：Status、Priority、Text、People、Date、Numbers、Checkbox；支持新增、重命名、删除列。
-- **Gantt**：根据 Start date / Due date（或 Target date）自动绘制时间条，按状态着色，支持 Day / Week / Month 缩放。
+- **列类型**：Status、Priority、Text、People、Date、Numbers、Checkbox、Dependency；支持新增、重命名、删除列。
+- **Gantt**：根据 Start date / Due date（或 Target date）自动绘制时间条，按状态着色，支持 Day / Week / Month 缩放；Dependency 列支持「全部完成」/「任一完成」的前置任务依赖与箭头连线。
 - **协作**：评论、活动流、Dashboard、全局搜索、My work。
 - **多租户 Workspace**：工作区切换、成员管理、邀请链接、Owner/Admin/Member/Guest 角色。
 - **Board 级共享**：Workspace / Private 可见性，显式成员与 Viewer/Commenter/Editor/Admin 角色。
@@ -397,7 +397,19 @@ docker run --rm -p 8090:8090 \
 - 支持 **Day / Week / Month** 缩放；红色虚线为今天。
 - 点击时间条会打开条目详情抽屉。
 
-新建 Project / Roadmap / Sprint 模板时自带 `Start date` 列；演示数据也已补齐起止日期。
+### 任务依赖（Finish-to-Start）
+
+在表格或条目详情中添加/使用 **Dependencies** 列即可建立前置任务关系：
+
+- 一个任务可以选择多个前置任务；每个依赖单元格可选择：
+  - **All finish**（全部完成）：所有前置任务结束后才开始，时间取最晚结束日 + 1 天。
+  - **Any finishes**（任一完成）：任一前置任务结束后即可开始，时间取最早结束日 + 1 天。
+- 甘特图会根据依赖自动计算后继任务的开始/结束投影，并绘制前置任务到后继任务的箭头；任务条上的分支图标表示该条使用了自动排期。
+- 自动排期是**读取时投影**，不会覆盖日期列中的原始值，因此把前置任务改早或改晚都会重新计算；日期列仍可手动编辑。
+- 后端会校验依赖必须指向同一 Board 的条目，并拒绝自依赖和循环依赖。
+- 前置任务标记为 Done 时会记录实际完成时间；依赖排期优先使用该时间，否则使用结束日期。历史数据或未记录完成时间的任务仍按结束日期计算。
+
+新建 Project / Roadmap / Sprint 模板时自带 `Start date` 与 `Dependencies` 列；演示数据也已补齐起止日期。
 
 ## 截图
 

@@ -68,6 +68,8 @@ func defaultColumnWidth(typ string) int {
 		return 145
 	case "priority":
 		return 120
+	case "dependency":
+		return 190
 	default:
 		return 150
 	}

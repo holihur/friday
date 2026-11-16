@@ -14,11 +14,11 @@ import {
   startOfMonth,
   startOfWeek,
 } from "date-fns"
-import { CalendarRange, ZoomIn } from "lucide-react"
+import { CalendarRange, GitBranch, ZoomIn } from "lucide-react"
 import { EmptyState } from "@/components/EmptyState"
 import { StatusChip } from "@/components/StatusChip"
 import { Button } from "@/components/ui/button"
-import { itemStatus } from "@/lib/board-utils"
+import { dependencyLinks, itemStatus } from "@/lib/board-utils"
 import { cn, dueTone, getDateLocale, readableTextColor } from "@/lib/utils"
 import type { Board, Group, Item } from "@/lib/types"
 
@@ -33,6 +33,7 @@ const zoomMeta: Record<Zoom, { label: string; dayWidth: number }> = {
 interface DateRange {
   start: Date
   end: Date
+  auto?: boolean
 }
 
 interface Unit {
@@ -141,6 +142,16 @@ export function GanttView({
     const map = new Map<string, DateRange>()
     if (!startCol && !endCol) return map
     for (const item of items) {
+      const projectedStart = item.schedule ? toDate(item.schedule.start) : null
+      const projectedEnd = item.schedule ? toDate(item.schedule.end) : null
+      if (projectedStart && projectedEnd) {
+        if (projectedStart > projectedEnd) {
+          map.set(item.id, { start: projectedEnd, end: projectedStart, auto: item.schedule?.auto })
+        } else {
+          map.set(item.id, { start: projectedStart, end: projectedEnd, auto: item.schedule?.auto })
+        }
+        continue
+      }
       let start = startCol ? toDate(item.values[startCol.id]) : null
       const end = endCol ? toDate(item.values[endCol.id]) : null
       if (startCol && endCol && !start && !end) continue
@@ -238,8 +249,40 @@ export function GanttView({
     }
   }
 
+  type BarStyle = NonNullable<ReturnType<typeof barStyle>>
+  const barById = new Map<string, BarStyle>()
+  for (const item of items) {
+    const style = barStyle(item)
+    if (style) barById.set(item.id, style)
+  }
+
+  const rowTops = new Map<string, number>()
+  let rowCursor = 0
+  for (const entry of grouped) {
+    rowCursor += 32
+    for (const item of entry.items) {
+      rowTops.set(item.id, rowCursor)
+      rowCursor += 39
+    }
+  }
+  const rowsHeight = rowCursor
+
+  const dependencyEdges: Array<{ from: string; to: string }> = []
+  const edgeKeys = new Set<string>()
+  for (const item of items) {
+    for (const link of dependencyLinks(board.columns, item.values)) {
+      for (const predecessorID of link.itemIds) {
+        if (!barById.has(predecessorID) || !barById.has(item.id)) continue
+        const key = `${predecessorID}->${item.id}`
+        if (edgeKeys.has(key)) continue
+        edgeKeys.add(key)
+        dependencyEdges.push({ from: predecessorID, to: item.id })
+      }
+    }
+  }
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-5">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="flex items-center gap-1.5 text-sm font-bold">
@@ -251,25 +294,27 @@ export function GanttView({
             {ranges.size === 1 ? t("{{count}} dated item", { count: ranges.size }) : t("{{count}} dated items", { count: ranges.size })}
           </p>
         </div>
-        <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-          <span className="flex items-center gap-1 px-1.5 text-[10px] font-semibold text-muted-foreground">
+        <div className="flex items-center gap-3">
+          <span className="flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
             <ZoomIn className="h-3 w-3" /> {t("Zoom")}
           </span>
-          {(Object.keys(zoomMeta) as Zoom[]).map((z) => (
-            <Button
-              key={z}
-              size="sm"
-              variant={zoom === z ? "soft" : "ghost"}
-              className="h-7 px-2.5 text-[11px]"
-              onClick={() => setZoom(z)}
-            >
-              {t(zoomMeta[z].label)}
-            </Button>
-          ))}
+          <div className="flex items-center gap-0.5">
+            {(Object.keys(zoomMeta) as Zoom[]).map((z) => (
+              <Button
+                key={z}
+                size="sm"
+                variant={zoom === z ? "soft" : "ghost"}
+                className="h-7 px-2.5 text-[11px]"
+                onClick={() => setZoom(z)}
+              >
+                {t(zoomMeta[z].label)}
+              </Button>
+            ))}
+          </div>
         </div>
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-sm">
+      <div className="overflow-hidden rounded-2xl border border-border/70 bg-card">
         <div className="overflow-x-auto scrollbar-thin">
           <div style={{ minWidth: 280 + timelineWidth }}>
             {/* Timeline header */}
@@ -296,15 +341,16 @@ export function GanttView({
               </div>
             </div>
 
+            <div className="relative">
             {grouped.map(({ group, items: groupItems }) => (
               <section key={group.id}>
                 <div className="flex h-8 border-b border-border/70 bg-muted/20">
                   <div className="sticky left-0 z-20 flex w-[280px] shrink-0 items-center gap-1.5 border-r border-border bg-muted/60 px-3">
-                    <span className="h-2.5 w-2.5 rounded-[3px]" style={{ backgroundColor: group.color }} />
+                    <span className="h-2.5 w-2.5 rounded-[4px]" style={{ backgroundColor: group.color }} />
                     <span className="text-[11px] font-bold" style={{ color: group.color }}>
                       {t(group.title)}
                     </span>
-                    <span className="rounded-full bg-background/80 px-1.5 text-[9px] font-semibold text-muted-foreground">
+                    <span className="rounded-[4px] bg-background/80 px-1.5 text-[9px] font-semibold text-muted-foreground">
                       {groupItems.length}
                     </span>
                   </div>
@@ -312,7 +358,7 @@ export function GanttView({
                 </div>
 
                 {groupItems.map((item) => {
-                  const style = barStyle(item)
+                  const style = barById.get(item.id) ?? null
                   const status = itemStatus(board.columns, item.values)
                   const tone = style ? dueTone(format(style.range.end, "yyyy-MM-dd")) : "normal"
                   return (
@@ -343,12 +389,13 @@ export function GanttView({
                           <button
                             onClick={() => onOpenItem(item.id)}
                             className={cn(
-                              "absolute top-1/2 z-[2] flex h-[22px] -translate-y-1/2 items-center overflow-hidden rounded-[5px] px-2 text-left text-[10px] font-semibold shadow-sm transition hover:brightness-105 hover:shadow-md",
+                              "absolute top-1/2 z-[2] flex h-[22px] -translate-y-1/2 items-center overflow-hidden rounded-[4px] px-2 text-left text-[10px] font-semibold shadow-sm transition hover:brightness-105 hover:shadow-md",
                               tone === "danger" && "ring-1 ring-destructive/60",
                             )}
                             style={{ left: style.left, width: style.width, backgroundColor: style.backgroundColor, color: style.color }}
-                            title={`${item.name} · ${format(style.range.start, "MMM d", { locale })} → ${format(style.range.end, "MMM d, yyyy", { locale })}`}
+                            title={`${item.name} · ${format(style.range.start, "MMM d", { locale })} → ${format(style.range.end, "MMM d, yyyy", { locale })}${style.range.auto ? ` · ${t("Auto from dependencies")}` : ""}`}
                           >
+                            {style.range.auto && <GitBranch className="mr-1 h-2.5 w-2.5 shrink-0 opacity-80" />}
                             <span className="truncate">{style.status ? t(style.status.name) : format(style.range.end, "MMM d", { locale })}</span>
                           </button>
                         ) : (
@@ -360,12 +407,58 @@ export function GanttView({
                 })}
               </section>
             ))}
+            {dependencyEdges.length > 0 && (
+              <svg
+                aria-hidden="true"
+                className="pointer-events-none absolute top-0 z-[3] text-muted-foreground/55"
+                style={{ left: 280, width: timelineWidth, height: rowsHeight }}
+                width={timelineWidth}
+                height={rowsHeight}
+              >
+                <defs>
+                  <marker id="gantt-dependency-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+                    <path d="M0,0 L8,4 L0,8 z" fill="currentColor" />
+                  </marker>
+                </defs>
+                {dependencyEdges.map((edge) => {
+                  const from = barById.get(edge.from)
+                  const to = barById.get(edge.to)
+                  const fromRow = rowTops.get(edge.from)
+                  const toRow = rowTops.get(edge.to)
+                  if (!from || !to || fromRow === undefined || toRow === undefined) return null
+                  const x1 = from.left + from.width - 1
+                  const y1 = fromRow + 19.5
+                  const x2 = to.left
+                  const y2 = toRow + 19.5
+                  const gap = x2 - x1
+                  const bend = gap > 0 ? Math.min(48, Math.max(16, gap / 2)) : 24
+                  return (
+                    <path
+                      key={`${edge.from}-${edge.to}`}
+                      d={`M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`}
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={1.2}
+                      markerEnd="url(#gantt-dependency-arrow)"
+                    />
+                  )
+                })}
+              </svg>
+            )}
+            </div>
           </div>
         </div>
-        <div className="flex items-center justify-between border-t border-border bg-muted/20 px-3 py-2 text-[10px] text-muted-foreground">
+        <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3 text-[10px] text-muted-foreground">
           <span>{t("Bar color follows item status · click a bar to open the item")}</span>
-          <span className="flex items-center gap-1.5">
-            <span className="inline-block h-2 w-4 rounded-sm bg-destructive/70" /> {t("overdue date")}
+          <span className="flex items-center gap-3">
+            {dependencyEdges.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <GitBranch className="h-3 w-3" /> {t("Dependency link")}
+              </span>
+            )}
+            <span className="flex items-center gap-1.5">
+              <span className="inline-block h-2 w-4 rounded-sm bg-destructive/70" /> {t("overdue date")}
+            </span>
           </span>
         </div>
       </div>

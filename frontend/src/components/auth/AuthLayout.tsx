@@ -28,7 +28,7 @@ export function AuthLayout({
         </div>
 
         <div className="relative max-w-md">
-          <div className="mb-5 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/85 backdrop-blur">
+          <div className="mb-5 inline-flex items-center gap-1.5 rounded-[4px] border border-white/15 bg-white/10 px-3 py-1 text-[11px] font-semibold text-white/85 backdrop-blur">
             <Sparkles className="h-3 w-3 text-[#ffcb00]" />
             {t("A calmer way to ship")}
           </div>
@@ -82,7 +82,7 @@ export function AuthLayout({
                   <UserAvatar name={row.person} color={row.avatar} size="xs" />
                 </span>
                 <span
-                  className="w-20 rounded-[3px] px-1.5 py-0.5 text-center text-[9px] font-bold text-white"
+                  className="w-20 rounded-[4px] px-1.5 py-0.5 text-center text-[9px] font-bold text-white"
                   style={{ backgroundColor: row.color }}
                 >
                   {t(row.label)}
@@ -103,7 +103,7 @@ export function AuthLayout({
         </div>
         <div className="flex justify-center px-6 pt-8 lg:hidden">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-primary text-sm font-extrabold text-primary-foreground">
+            <div className="flex h-8 w-8 items-center justify-center rounded-[4px] bg-primary text-sm font-extrabold text-primary-foreground">
               F
             </div>
             <span className="text-lg font-extrabold tracking-tight">Friday</span>

@@ -222,7 +222,7 @@ export function BoardHeader({
               >
                 <Icon className="h-3.5 w-3.5" />
                 {t(tab.label)}
-                {active && <span className="absolute inset-x-1 -bottom-px h-0.5 rounded-full bg-primary" />}
+                {active && <span className="absolute inset-x-1 -bottom-px h-0.5 rounded-[4px] bg-primary" />}
               </button>
             )
           })}

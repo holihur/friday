@@ -20,7 +20,8 @@ func (s *Server) listItems(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	if _, _, ok := s.requireBoardAccess(w, r, boardID, "read"); !ok {
+	board, _, ok := s.requireBoardAccess(w, r, boardID, "read")
+	if !ok {
 		return
 	}
 	items := []models.Item{}
@@ -30,6 +31,7 @@ func (s *Server) listItems(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	_ = cur.All(r.Context(), &items)
+	s.applySchedule(board, items)
 	writeJSON(w, http.StatusOK, map[string]any{"items": items})
 }
 
@@ -133,6 +135,7 @@ func (s *Server) updateItem(w http.ResponseWriter, r *http.Request) {
 	if it.Values == nil {
 		it.Values = map[string]any{}
 	}
+	wasDone := itemIsDone(board, &it)
 
 	changed := []string{}
 	if req.Name != nil {
@@ -147,8 +150,41 @@ func (s *Server) updateItem(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	validCols := map[string]string{}
+	dependencyCols := map[string]bool{}
 	for _, c := range board.Columns {
 		validCols[c.ID] = c.Title
+		if c.Type == "dependency" {
+			dependencyCols[c.ID] = true
+		}
+	}
+	dependencyChanged := false
+	proposedValues := make(map[string]any, len(it.Values)+len(req.Values))
+	for k, v := range it.Values {
+		proposedValues[k] = v
+	}
+	for k, v := range req.Values {
+		if _, ok := validCols[k]; !ok || !dependencyCols[k] {
+			continue
+		}
+		dependencyChanged = true
+		if v == nil {
+			delete(proposedValues, k)
+		} else {
+			proposedValues[k] = v
+		}
+	}
+	if dependencyChanged {
+		boardItems := []models.Item{}
+		cur, err := s.db.Database.Collection("items").Find(r.Context(), bson.M{"boardId": it.BoardID})
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "could not validate dependencies")
+			return
+		}
+		_ = cur.All(r.Context(), &boardItems)
+		if msg := validateDependencyUpdate(board, boardItems, &it, proposedValues); msg != "" {
+			writeError(w, http.StatusBadRequest, msg)
+			return
+		}
 	}
 	for k, v := range req.Values {
 		title, ok := validCols[k]
@@ -186,6 +222,14 @@ func (s *Server) updateItem(w http.ResponseWriter, r *http.Request) {
 	if len(changed) > 0 {
 		detail = strings.Join(dedupe(changed), ", ")
 	}
+	nowDone := itemIsDone(board, &it)
+	if nowDone && !wasDone {
+		completedAt := time.Now()
+		it.CompletedAt = &completedAt
+	}
+	if !nowDone {
+		it.CompletedAt = nil
+	}
 	it.UpdatedAt = time.Now()
 	_, err = s.db.Database.Collection("items").ReplaceOne(r.Context(), bson.M{"_id": it.ID}, it)
 	if err != nil {
@@ -205,6 +249,7 @@ func (s *Server) deleteItem(w http.ResponseWriter, r *http.Request) {
 	}
 	_, _ = s.db.Database.Collection("items").DeleteOne(r.Context(), bson.M{"_id": item.ID})
 	_, _ = s.db.Database.Collection("comments").DeleteMany(r.Context(), bson.M{"itemId": item.ID})
+	s.removeDependencyReferences(r.Context(), item.BoardID, map[string]bool{item.ID.Hex(): true})
 	a := authFrom(r)
 	s.logActivity(r.Context(), item.BoardID, item.ID, a.User, "deleted item", item.Name, "")
 	s.touchBoard(r, item.BoardID)
